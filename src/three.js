@@ -16,27 +16,40 @@ function MyThree() {
         var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         var renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.toneMappingExposure = 2.3;
+        renderer.shadowMap.enabled = true;
+        // scene.background.addColors(0xfffff);
+        scene.background = new THREE.Color(0xffffff); // White color
 
 
         // document.body.appendChild( renderer.domElement );
         // use ref as a mount point of the Three.js scene instead of the document.body
         refContainer.current && refContainer.current.appendChild(renderer.domElement);
 
-        const light = new THREE.AmbientLight()
-        var geometry = new THREE.BoxGeometry(1, 1, 1);
-        var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        var cube = new THREE.Mesh(geometry, material);
+        const hemilight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 4);
+        scene.add(hemilight)
 
+        const spotLight = new THREE.SpotLight(0xffa95c, 4)
+        spotLight.castShadow = true;
+        scene.add(spotLight)
 
-        scene.add(cube);
-        scene.add(light)
         camera.position.z = 5;
+
+
         // Add GLTFLoader to load the .glb model
         const loader = new GLTFLoader();
-        loader.load('/models/house.glb', (gltf) => {
-            console.log(gltf, 'asd');
+        loader.load('/models/house02.glb', (gltf) => {
 
-            const model = gltf.scene;
+            const model = gltf.scene.children[0];
+            model.castShadow = true;
+            model.receiveShadow = true;
+            model.traverse(n => {
+                if (n.isMesh) {
+                    n.castShadow = true;
+                    n.receiveShadow = true;
+                }
+            })
             scene.add(model);
 
             // Optional: Adjust the model’s position or scale
@@ -55,13 +68,14 @@ function MyThree() {
 
             // Start rendering the scene with the model
             const animate = () => {
-                requestAnimationFrame(animate);
-
-                // If you want to rotate the model
-                // model.rotation.x += 0.01;
-                // model.rotation.y += 0.01;
-
                 renderer.render(scene, camera);
+                spotLight.position.set(
+                    camera.position.x + 10,
+                    camera.position.y + 10,
+                    camera.position.z + 10
+                )
+
+                requestAnimationFrame(animate);
             };
             animate();
         }, undefined, (error) => {
